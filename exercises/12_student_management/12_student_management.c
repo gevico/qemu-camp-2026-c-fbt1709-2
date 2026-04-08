@@ -17,10 +17,28 @@ int main() {
     
     Student *students[3];
     
-    for (int i = 0; i < 3; i++) 
-    {
-	    // TODO: 在这里添加你的代码
-        // I AM NOT DONE
+    for (int i = 0; i < 3; i++) {
+        students[i] = malloc(sizeof(Student));
+        if (students[i] == NULL) {
+            printf("内存分配失败\n");
+            for (int j = 0; j < i; j++) {
+                free(students[j]);
+            }
+            fclose(file);
+            return 1;
+        }
+        if (fscanf(file, "%19s %49s %d",
+                    students[i]->id,
+                    students[i]->name,
+                    &students[i]->age) != 3) {
+            printf("读取学生信息失败\n");
+            free(students[i]);
+            for (int j = 0; j < i; j++) {
+                free(students[j]);
+            }
+            fclose(file);
+            return 1;
+        }
     }
     fclose(file);
     

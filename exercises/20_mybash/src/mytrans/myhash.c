@@ -4,16 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-// djb2 哈希函数（经典字符串哈希，分布均匀）
 unsigned long hash_function(const char *str) {
   unsigned long hash = 5381;
   int c;
   while ((c = *str++))
-    hash = ((hash << 5) + hash) + c; // hash * 33 + c
+    hash = ((hash << 5) + hash) + c;
   return hash;
 }
 
-// 创建哈希表
 HashTable *create_hash_table() {
   HashTable *table = malloc(sizeof(HashTable));
   if (!table)
@@ -24,7 +22,6 @@ HashTable *create_hash_table() {
   return table;
 }
 
-// 释放单个节点
 void free_node(HashNode *node) {
   if (node) {
     free(node->key);
@@ -33,7 +30,6 @@ void free_node(HashNode *node) {
   }
 }
 
-// 释放整个哈希表
 void free_hash_table(HashTable *table) {
   if (!table)
     return;
@@ -48,30 +44,51 @@ void free_hash_table(HashTable *table) {
   free(table);
 }
 
-// 插入键值对
 int hash_table_insert(HashTable *table, const char *key, const char *value) {
   if (!table || !key || !value)
     return 0;
 
-  unsigned long hash = hash_function(key) % HASH_TABLE_SIZE;
-  HashNode *node = table->buckets[hash];
+  unsigned long h = hash_function(key) % HASH_TABLE_SIZE;
+  HashNode *node = table->buckets[h];
 
-    // TODO: 在这里添加你的代码
-    // I AM NOT DONE
+  while (node) {
+    if (strcmp(node->key, key) == 0) {
+      free(node->value);
+      node->value = strdup(value);
+      return 1;
+    }
+    node = node->next;
+  }
+
+  HashNode *new = malloc(sizeof(HashNode));
+  if (!new)
+    return 0;
+  new->key = strdup(key);
+  new->value = strdup(value);
+  if (!new->key || !new->value) {
+    free(new->key);
+    free(new->value);
+    free(new);
+    return 0;
+  }
+  new->next = table->buckets[h];
+  table->buckets[h] = new;
 
   return 1;
 }
 
-// 查找键
 const char *hash_table_lookup(HashTable *table, const char *key) {
   if (!table || !key)
     return NULL;
 
-  unsigned long hash = hash_function(key) % HASH_TABLE_SIZE;
-  HashNode *node = table->buckets[hash];
+  unsigned long h = hash_function(key) % HASH_TABLE_SIZE;
+  HashNode *node = table->buckets[h];
 
-    // TODO: 在这里添加你的代码
-    // I AM NOT DONE
+  while (node) {
+    if (strcmp(node->key, key) == 0)
+      return node->value;
+    node = node->next;
+  }
 
-  return NULL; // 未找到
+  return NULL;
 }

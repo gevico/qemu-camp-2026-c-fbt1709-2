@@ -1,26 +1,31 @@
 # src/myfile/Makefile
 
 CC = gcc
+AR = ar
 CFLAGS = -Wall -I../../include -g -fPIE
 
-# 库名称
+REPO_ROOT ?= ../..
+OBJDIR := $(REPO_ROOT)/obj/myfile
+
 LIBNAME := myfile
-# 静态库输出名：libmyfile.a
 LIB := lib$(LIBNAME).a
-# 最终库输出目录（比如 ./obj/src/myfile/）
-OBJDIR ?= ./obj
-# 最终 .a 文件路径
 LIB_PATH := $(OBJDIR)/$(LIB)
 
-# 源文件
 SRCS := myfile.c
-OBJS := $(SRCS:.c=.o)
-OBJS := $(patsubst %.o,$(OBJDIR)/%.o,$(OBJS))
+OBJS := $(addprefix $(OBJDIR)/,$(SRCS:.c=.o))
 
 all: $(LIB_PATH)
 
-# TODO: 在这里添加你的代码
-# I AM NOT DONE
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(LIB_PATH): $(OBJS)
+	$(AR) rcs $@ $^
 
 clean:
-	@rm -rf $(OBJDIR)/*.o $(LIB_PATH)
+	rm -rf $(OBJDIR)
+
+.PHONY: all clean
