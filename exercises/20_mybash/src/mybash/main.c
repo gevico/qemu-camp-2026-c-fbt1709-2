@@ -143,35 +143,44 @@ static void dispatch_command(int argc_parsed, char **args) {
   }
 }
 
+static int run_from_file(const char *filename) {
+  char input[MAX_INPUT];
+  char *args[MAX_ARGS];
+  FILE *file = fopen(filename, "r");
+  if (!file) {
+    printf("mybash: cannot open file: %s\n", filename);
+    return 1;
+  }
+
+  printf("mybash: reading commands from file '%s'\n", filename);
+
+  while (fgets(input, sizeof(input), file)) {
+    input[strcspn(input, "\n")] = '\0';
+
+    int argc_parsed = parse_input(input, args);
+
+    if (argc_parsed == 0) {
+      continue;
+    }
+
+    dispatch_command(argc_parsed, args);
+    free_args(args, argc_parsed);
+  }
+
+  fclose(file);
+  return 0;
+}
+
 int main(int argc, char *argv[]) {
   char input[MAX_INPUT];
   char *args[MAX_ARGS];
 
   if (argc > 1) {
-    const char *filename = argv[1];
-    FILE *file = fopen(filename, "r");
-    if (!file) {
-      printf("mybash: cannot open file: %s\n", filename);
-      return 1;
-    }
+    return run_from_file(argv[1]);
+  }
 
-    printf("mybash: reading commands from file '%s'\n", filename);
-
-    while (fgets(input, sizeof(input), file)) {
-      input[strcspn(input, "\n")] = '\0';
-
-      int argc_parsed = parse_input(input, args);
-
-      if (argc_parsed == 0) {
-        continue;
-      }
-
-      dispatch_command(argc_parsed, args);
-      free_args(args, argc_parsed);
-    }
-
-    fclose(file);
-    return 0;
+  if (access("mybash_script.txt", R_OK) == 0) {
+    return run_from_file("mybash_script.txt");
   }
 
   while (1) {

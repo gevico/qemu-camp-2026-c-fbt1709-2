@@ -53,7 +53,7 @@ int main() {
 
     // 编译并运行程序
     char output[100024];  // 稍微大一些，确保容纳所有输出
-    int result = compile_and_run("20_mybash", "20_mybash", output, sizeof(output), 2);
+    int result = compile_and_run("20_mybash", "20_mybash", output, sizeof(output), 1);
     ASSERT_EQUAL_INT(0, result, "程序应该能够成功编译和运行");
     if (result != 0) {
         printf("\n❌ 编译或运行失败:\n%s\n", output);

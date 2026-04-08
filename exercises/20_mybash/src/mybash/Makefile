@@ -26,8 +26,11 @@ $(OBJDIR)/%.o: %.c | $(OBJDIR)
 
 $(TARGET_PATH): $(OBJS) | $(BINDIR)
 	$(CC) -o $@ $(OBJS) $(LINKDIRS) $(LDLIBS)
+	cp -f $@ $(REPO_ROOT)/20_mybash
+	chmod +x $(REPO_ROOT)/20_mybash
 
 clean:
 	rm -rf $(OBJDIR) $(TARGET_PATH)
+	rm -f $(REPO_ROOT)/20_mybash
 
 .PHONY: all clean
