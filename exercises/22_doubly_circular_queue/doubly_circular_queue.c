@@ -2,45 +2,88 @@
 
 #include <stdlib.h>
 
-// 头尾哨兵
+static struct node headsentinel;
 static struct node tailsentinel;
-static struct node headsentinel = {0, NULL, &tailsentinel};
-static struct node tailsentinel = {0, &headsentinel, NULL};
+
+static void link_sentinels(void) {
+    headsentinel.data = tailsentinel.data = 0;
+    headsentinel.prev = &tailsentinel;
+    headsentinel.next = &tailsentinel;
+    tailsentinel.prev = &headsentinel;
+    tailsentinel.next = &headsentinel;
+}
 
 static link head = &headsentinel;
 static link tail = &tailsentinel;
+static int linked = 0;
+
+static void ensure(void) {
+    if (!linked) {
+        link_sentinels();
+        linked = 1;
+    }
+}
 
 link make_node(int data) {
-    // TODO: 在这里添加你的代码
-    // I AM NOT DONE
+    ensure();
+    link p = malloc(sizeof(struct node));
+    if (!p) {
+        return NULL;
+    }
+    p->data = data;
+    p->prev = p->next = NULL;
+    return p;
 }
 
 void free_node(link p) {
-    // TODO: 在这里添加你的代码
-    // I AM NOT DONE
+    if (p && p != &headsentinel && p != &tailsentinel) {
+        free(p);
+    }
 }
 
 link search(int key) {
-    // TODO: 在这里添加你的代码
-    // I AM NOT DONE
+    ensure();
+    for (link p = head->next; p != tail; p = p->next) {
+        if (p->data == key) {
+            return p;
+        }
+    }
+    return NULL;
 }
 
 void insert(link p) {
-    // TODO: 在这里添加你的代码
-    // I AM NOT DONE
+    ensure();
+    if (!p) {
+        return;
+    }
+    p->next = head->next;
+    p->prev = head;
+    head->next->prev = p;
+    head->next = p;
 }
 
 void delete(link p) {
-    // TODO: 在这里添加你的代码
-    // I AM NOT DONE
+    ensure();
+    if (!p || p == &headsentinel || p == &tailsentinel) {
+        return;
+    }
+    p->prev->next = p->next;
+    p->next->prev = p->prev;
+    p->prev = p->next = NULL;
 }
 
 void traverse(void (*visit)(link)) {
-    // TODO: 在这里添加你的代码
-    // I AM NOT DONE
+    ensure();
+    for (link p = head->next; p != tail; p = p->next) {
+        visit(p);
+    }
 }
 
 void destroy(void) {
-    // TODO: 在这里添加你的代码
-    // I AM NOT DONE
+    ensure();
+    while (head->next != tail) {
+        link p = head->next;
+        delete(p);
+        free_node(p);
+    }
 }
