@@ -16,6 +16,37 @@
  static clock_t start_time;
  
  /**
+  * 将编译失败信息写入 output；若过长则保留末尾（gcc/ld 报错通常在最后），避免 snprintf 截掉关键行。
+  */
+ static void format_compile_failure(char *output, size_t output_size, const char *compile_log) {
+     const char header[] = "编译失败:\n";
+     const size_t hlen = sizeof(header) - 1;
+     if (output_size <= hlen + 8) {
+         snprintf(output, output_size, "%s", header);
+         return;
+     }
+     size_t loglen = strlen(compile_log);
+     size_t cap_body = output_size - hlen - 1;
+     if (loglen <= cap_body) {
+         memcpy(output, header, hlen);
+         memcpy(output + hlen, compile_log, loglen + 1);
+         return;
+     }
+     const char mid[] = "... (仅显示末尾日志，便于查看 gcc/ld/make 报错) ...\n";
+     const size_t mlen = sizeof(mid) - 1;
+     size_t tail_max = cap_body - mlen;
+     if (tail_max < 128) {
+         tail_max = cap_body > 256 ? cap_body - mlen / 2 : cap_body / 2;
+     }
+     const char *tail = compile_log + loglen - tail_max;
+     const char *nl = strchr(tail, '\n');
+     if (nl != NULL && nl + 1 <= compile_log + loglen) {
+         tail = nl + 1;
+     }
+     snprintf(output, output_size, "%s%s%s", header, mid, tail);
+ }
+ 
+ /**
   * 初始化测试框架
   */
  void test_init(const char* exercise_name) {
@@ -108,14 +139,26 @@
         }
     }
     
-     
-     char compile_output[4096] = {0};
-     size_t bytes_read = fread(compile_output, 1, sizeof(compile_output) - 1, fp);
+     /* 读满编译输出：路径较长时 make 日志不足 64K 也会超过 4K，截断会丢掉真正报错行 */
+     static char compile_log[256 * 1024];
+     size_t off = 0;
+     while (off < sizeof(compile_log) - 1) {
+         size_t n = fread(compile_log + off, 1, sizeof(compile_log) - 1 - off, fp);
+         if (n == 0) {
+             break;
+         }
+         off += n;
+     }
+     compile_log[off] = '\0';
+
+     char drain[8192];
+     while (fread(drain, 1, sizeof(drain), fp) > 0) {
+     }
+
      int compile_status = pclose(fp);
-     
-     // 检查编译是否成功
-     if (compile_status != 0) {
-         snprintf(output, output_size, "编译失败:\n%s", compile_output);
+
+     if (!WIFEXITED(compile_status) || WEXITSTATUS(compile_status) != 0) {
+         format_compile_failure(output, output_size, compile_log);
          return -1;
      }
      
@@ -142,13 +185,22 @@
      }
 
      
-     
-     // 读取程序输出
-     bytes_read = fread(output, 1, output_size - 1, fp);
-     output[bytes_read] = '\0';
-     
+     // 读取程序输出（可能大于单次 fread 缓冲区）
+     off = 0;
+     while (off < output_size - 1) {
+         size_t n = fread(output + off, 1, output_size - 1 - off, fp);
+         if (n == 0) {
+             break;
+         }
+         off += n;
+     }
+     output[off] = '\0';
+
      int run_status = pclose(fp);
-     return run_status;
+     if (WIFEXITED(run_status)) {
+         return WEXITSTATUS(run_status);
+     }
+     return -1;
  }
  
  /**
